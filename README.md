@@ -46,7 +46,7 @@ Quindi il programma deve avere una funzionalità che mostra i link tra le note.
 ## Metadati nota
 
 |   Name      |   Description                                                |
-| =========== | ============================================================ |
+| ----------- | ------------------------------------------------------------ |
 | id          | Identificativo documento. Generato manualmente.              |
 | title       | Titolo nota.                                                 |
 | tag         | Lista di stringhe.                                           |
@@ -83,3 +83,7 @@ notes:
 
 This is my note project.
 ```
+
+## Versioni future
+
+- Componente navigabile tramite interfaccia web.
