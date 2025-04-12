@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"regexp"
 
@@ -13,33 +12,17 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 {
-		command := os.Args[1]
-		args := os.Args[2:]
+	conf, args := AppParseFlags()
+	if len(args) > 0 {
+		command := args[0]
 		switch command {
 		case "ls":
-			LsCommand(args)
+			LsCommand(conf, args[1:])
 		default:
 			NotFoundCommand(command)
 		}
 	} else {
 		PrintHelpMessage()
-	}
-}
-
-func LsCommand(args []string) {
-	files, err := FindAllNotesFiles(".")
-	if err != nil {
-		log.Fatalf("main: Unable to read notes files %v", err)
-	}
-	for _, file := range files {
-		notes, err := GetNoteData(file)
-		if err != nil {
-			log.Fatalf("main: Unable to read file %s. %v", file, err)
-		}
-		for _, note := range notes {
-			fmt.Printf("%s\n", note.Id)
-		}
 	}
 }
 
@@ -125,13 +108,17 @@ func MarkdownNote(path string, file *os.File) (*Note, error) {
 	return nil, fmt.Errorf("markdown: Not found metadata note")
 }
 
-func FindAllNotesFiles(path string) ([]string, error) {
+func FindAllNotesFiles(basePath string) ([]string, error) {
 	var files []string
-	root := os.DirFS(path)
+	root := os.DirFS(basePath)
 	fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			if regexp.MustCompile("\\.yaml$").MatchString(d.Name()) || regexp.MustCompile("\\.md$").MatchString(d.Name()) {
-				files = append(files, path)
+				if basePath == "." {
+					files = append(files, path)
+				} else {
+					files = append(files, fmt.Sprintf("%s%c%s", basePath, os.PathSeparator, path))
+				}
 			}
 		} else if regexp.MustCompile("^\\..").MatchString(d.Name()) {
 			return fs.SkipDir
