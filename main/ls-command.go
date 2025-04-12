@@ -21,6 +21,9 @@ type LsConf struct {
 	Tags []string
 	TagsOr []string
 	Output string
+	TableIdWidth int
+	TableTitleWidth int
+	TableTagsWidth int
 }
 
 func LsCommand(conf AppConfig, args []string) {
@@ -38,7 +41,7 @@ func LsCommand(conf AppConfig, args []string) {
 	if err != nil {
 		log.Fatalf("main: Unable to read notes files %v", err)
 	}
-	notePrintFunc := NotePrint(lsConf.Output)
+	notePrintFunc := NotePrint(lsConf)
 	for _, file := range files {
 		notes, err := GetNoteData(file)
 		if err != nil {
@@ -65,6 +68,9 @@ func LsFlags(args []string) LsConf {
 	lsf.StringVar(&conf.XId, "xid", "", "Regex match id")
 	lsf.StringVar(&conf.XTitle, "xtitle", "", "Regex match title")
 	lsf.StringVar(&conf.Output, "o", "table", "Output format. [table]")
+	lsf.IntVar(&conf.TableIdWidth, "tableIdWidth", 24, "Table width Id")
+	lsf.IntVar(&conf.TableTitleWidth, "tableTitleWidth", 60, "Table width Title")
+	lsf.IntVar(&conf.TableTagsWidth, "tableTagsWidth", 30, "Table width Tags")
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
 	err := lsf.Parse(args)
@@ -86,30 +92,24 @@ func LsFlags(args []string) LsConf {
 	return conf
 }
 
-func NotePrint(outputType string) NotePrintFunc {
-	switch outputType {
+func NotePrint(conf LsConf) NotePrintFunc {
+	switch conf.Output {
 	default:
-		return TablePrintNote()
+		return TablePrintNote(conf)
 	}
 }
 
-func TablePrintNote() NotePrintFunc {
-	const (
-		idWidth    = 24
-		titleWidth = 30
-		tagsWidth  = 30
-	)
-
+func TablePrintNote(conf LsConf) NotePrintFunc {
 	headerFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s\n",
-	idWidth, titleWidth, tagsWidth)
+	conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
 	rowFmt := headerFmt
 
 	fmt.Printf(headerFmt, "ID", "TITLE", "TAGS", "PATH")
-	fmt.Println(strings.Repeat("-", idWidth+titleWidth+tagsWidth+10) + "----------------------------------------")
+	fmt.Println(strings.Repeat("-", conf.TableIdWidth + conf.TableTitleWidth + conf.TableTagsWidth + 10) + "----------------------------------------")
 
 	return func(n Note) {
-		title := truncate(n.Title, titleWidth)
-		tags := truncate(strings.Join(n.Tags, ", "), tagsWidth)
+		title := truncate(n.Title, conf.TableTitleWidth)
+		tags := truncate(strings.Join(n.Tags, ", "), conf.TableTagsWidth)
 		fmt.Printf(rowFmt, n.Id, title, tags, n.Path)
 	}
 }
