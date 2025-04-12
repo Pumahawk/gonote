@@ -9,7 +9,7 @@ type Note struct {
 	Id string `yaml:"id"`
 	Path string
 	Title string `yaml:"title"`
-	Tag []string `yaml:"tag"`
+	Tags []string `yaml:"tags"`
 	CreateAt time.Time `yaml:"createAt"`
 	UpdateAt time.Time `yaml:"updateAt"`
 	Meta string `yaml:"meta"`

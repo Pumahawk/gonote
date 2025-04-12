@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"regexp"
+	"slices"
 
 	yaml "github.com/goccy/go-yaml"
 )
@@ -126,4 +127,23 @@ func FindAllNotesFiles(basePath string) ([]string, error) {
 		return nil
 	})
 	return files, nil
+}
+
+func NoteTagsFilter(note Note, tags, tagsOr []string) bool {
+	if len(tags) > 0 {
+		for _, t := range tags {
+			if !slices.Contains(note.Tags, t) {
+				return false
+			}
+		}
+	}
+	if len(tagsOr) > 0 {
+		for _, t := range tagsOr {
+			if slices.Contains(note.Tags, t) {
+				return true
+			}
+		}
+		return false
+	}
+	return true
 }
