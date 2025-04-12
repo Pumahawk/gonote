@@ -62,8 +62,8 @@ func LsCommand(conf AppConfig, args []string) {
 func LsFlags(args []string) LsConf {
 	var conf LsConf
 	lsf := flag.NewFlagSet("ls", 0)
-	lsf.StringVar(&conf.XId, "xid", ".", "Regex match id")
-	lsf.StringVar(&conf.XTitle, "xtitle", ".", "Regex match title")
+	lsf.StringVar(&conf.XId, "xid", "", "Regex match id")
+	lsf.StringVar(&conf.XTitle, "xtitle", "", "Regex match title")
 	lsf.StringVar(&conf.Output, "o", "table", "Output format. [table]")
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
