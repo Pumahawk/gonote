@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"regexp"
@@ -63,11 +64,11 @@ func GetNoteData(filePath string) ([]Note, error) {
 	defer file.Close()
 
 	if regexp.MustCompile("\\.yaml$").MatchString(filePath) {
-		return YamlNotes(file)
+		return YamlNotes(filePath, file)
 	}
 
 	if regexp.MustCompile("\\.md$").MatchString(filePath) {
-		note, err := MarkdownNote(file) 
+		note, err := MarkdownNote(filePath, file) 
 		if err != nil {
 			return nil, fmt.Errorf("main: Unable to read Markdown note: %s. %w", filePath, err)
 		}
@@ -77,43 +78,43 @@ func GetNoteData(filePath string) ([]Note, error) {
 	return nil, fmt.Errorf("main: Invalid note extension, supported [md, yaml]. Path %s", filePath)
 }
 
-func YamlNotes(file *os.File) ([]Note, error) {
+func YamlNotes(path string, file *os.File) ([]Note, error) {
 	var note NoteFile
 	if err := yaml.NewDecoder(file).Decode(&note); err != nil {
-		return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", file.Name(), err)
+		return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
 	}
 	var notes []Note
 	for _, note := range note.Notes {
-		note.Path = file.Name()
+		note.Path = path
 		notes = append(notes, note)
 	}
 	return notes, nil
 }
 
-func MarkdownNote(file *os.File) (*Note, error) {
+func MarkdownNote(path string, file *os.File) (*Note, error) {
 	var buf bytes.Buffer
 	scanner := bufio.NewScanner(file)
 
 	if !scanner.Scan() {
-		return nil, fmt.Errorf("markdown: Unable to read first line, path=%s. %w", file.Name(), scanner.Err())
+		return nil, fmt.Errorf("markdown: Unable to read first line, path=%s. %w", path, scanner.Err())
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("markdown: Unable to parse first line markdown file %s. %w", file.Name(), err)
+		return nil, fmt.Errorf("markdown: Unable to parse first line markdown file %s. %w", path, err)
 	}
 	if scanner.Text() != "---" {
-		return nil, fmt.Errorf("markdown: Invalid first line. Expected ---. path=%s", file.Name())
+		return nil, fmt.Errorf("markdown: Invalid first line. Expected ---. path=%s", path)
 	}
 
 	for scanner.Scan() {
 		if err := scanner.Err(); err != nil{
-			return nil, fmt.Errorf("markdown: Unable to parse markdown file %s. %w", file.Name(), err)
+			return nil, fmt.Errorf("markdown: Unable to parse markdown file %s. %w", path, err)
 		} else if scanner.Text() == "---" {
 			var note Note
 			if err := yaml.Unmarshal(buf.Bytes(), &note); err != nil {
 				return nil, fmt.Errorf("markdown: Unable to parse metadata in note. %w", err)
 			} else {
-				note.Path = file.Name()
+				note.Path = path
 				return &note, nil
 			}
 		} else {
@@ -125,17 +126,17 @@ func MarkdownNote(file *os.File) (*Note, error) {
 }
 
 func FindAllNotesFiles(path string) ([]string, error) {
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		return nil, fmt.Errorf("Unable extract markdown notes. path=%s", path)
-	}
 	var files []string
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			if regexp.MustCompile("\\.yaml$").MatchString(entry.Name()) || regexp.MustCompile("\\.md$").MatchString(entry.Name()) {
-				files = append(files, entry.Name())
+	root := os.DirFS(path)
+	fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			if regexp.MustCompile("\\.yaml$").MatchString(d.Name()) || regexp.MustCompile("\\.md$").MatchString(d.Name()) {
+				files = append(files, path)
 			}
+		} else if regexp.MustCompile("^\\..").MatchString(d.Name()) {
+			return fs.SkipDir
 		}
-	}
+		return nil
+	})
 	return files, nil
 }
