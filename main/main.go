@@ -23,6 +23,8 @@ func main() {
 			LsCommand(conf, args[1:])
 		case "show":
 			ShowCommand(conf, args[1:])
+		case "info":
+			InfoCommand(conf, args[1:])
 		default:
 			NotFoundCommand(command)
 		}
