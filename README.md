@@ -1,89 +1,168 @@
-# GoNote
+# 📝 GoNote
 
-Voglio creare uno strumento che mi permetta di creare note.
+**GoNote** is a simple CLI tool written in Go to manage notes stored in either YAML or Markdown format. It lets you list, inspect, and filter your notes efficiently with a few commands.
 
-Un requisito è che deve salvare le note in un filesystem in modo da permettermi di ricercare con strumenti **Gnu** come **Grep** o **Git**.
+---
 
-Tenendo conto che posso scrivere le note direttamente con **NeoVim** posso sfruttare le sue funzionalità per la gestione dei path e modifica dei file.
+## 📦 Features
 
-Una nota può essere un file in **Markdown** con intestazione oppure un file **yaml** contenente più note.
+- Supports notes written in **YAML** or **Markdown** with frontmatter.
+- Powerful filtering by tags and regex on titles or IDs.
+- Simple CLI interface with table output format.
+- Lightweight and fast — perfect for dev notes, bug tracking, or TODOs.
 
-Il programma **non** ha il compito di scrivere o gestire il contenuto della nota.
-Il suo obbiettivo è quello di permettere una facile ricerca delle note.
+---
 
-Il path della nota non deve influenzare l'identificazione della nota. Le note devono poter essere riorganizzate secondo il path senza compromettere la
-loro consultazione.
+## 🗂 Note Formats
 
-Sono convinto che per prendere note basa scrivere dei file di testo normali all'interno di una cartella.
-Molte funzionalità di scrittura e ricerca si possono affidare a utilities Gnu.
-Il programma deve permettere una ricerca mirata. Sui metadati delle note.
-
-Ad esempio posso sfruttare una ricerca ricorsiva di grep per fare una ricerca di un campo testuale ma sarebbe molto più
-difficile riscure a filtrare in maniera mirata sui metadati di una nota ignorando il resto.
-
-## Links
-
-Le note si possono collegare tra du loro tramite link. Non intendo link in markdown. Ma la possibilità di aggiungere
-link nella intestazione cosi da peter navigare tra le note.
-
-Non è possibile spostarsi tra le note usando **NeoVim** perché i percorsi dei file non possono essere usati come riferimento.
-Quindi il programma deve avere una funzionalità che mostra i link tra le note.
-
-## Funzionalità del programma
-
-- Lista        - Elenco note.
-- Aggregato    - Numero note, tag usati.
-- Ricerca      - Ricerca note per metadata o regex.
-- Stampa       - Stampa della nota senza doverla aprire con Nvim.
-- Modifica     - Apertura della nota tramite l'editor preferito (come kubectl).
-
-**Es**:
-- ls --details --tilte --tags --json --tag=xxx,yyy --tag-or zzz,jjj
-- stats --tags --tag=xxx
-- show --id
-- edit id
-
-## Metadati nota
-
-|   Name      |   Description                                                |
-| ----------- | ------------------------------------------------------------ |
-| id          | Identificativo documento. Generato manualmente.              |
-| title       | Titolo nota.                                                 |
-| tag         | Lista di stringhe.                                           |
-| createAt    | Data creazione. Campo libero da inserire manualmente.        |
-| updateAt    | Data modifica. Campo libero da inserire manualmente.         |
-| meta        | Campo oggetto libero. Può essere utile per altri script.     |
-| note        | Contenuto della nota.                                        |
-
-## Esempio di note
+### YAML Example
 
 ```yaml
-notes:
-- id: "personal-first-note"
-  title: "This id my first note"
-  tag: ["todo", "status:working"]
-  createAt: 2025-04-11T21:26:05+02:00
-  updateAt: 2025-04-11T21:36:29+02:00
-  meta: {}
+- id: BUG-001
+  title: "Login issue on dashboard"
+  tags: [ "bug", "todo" ]
   note: |
-    Questa è la mia prima nota
+    The dashboard crashes when a user with no profile logs in.
 ```
+
+### Markdown Example
 
 ```markdown
 ---
-notes:
-- id: "personal-second-note"
-  title: "This id my second note"
-  tag: ["todo", "status:done"]
-  createAt: 2025-04-11T21:29:51+02:00
-  updateAt: 2025-04-11T21:39:58+02:00
-  meta: {}
+id: MD-HELLO
+title: "Welcome Note"
+tags: ["md"]
 ---
-# Title my second note
 
-This is my note project.
+# Hello, GoNote!
+
+This is a sample markdown note powered by GoNote.
 ```
 
-## Versioni future
+---
 
-- Componente navigabile tramite interfaccia web.
+## 🚀 Usage
+
+```bash
+gonote -root ./notes
+```
+
+`-root` specifies the directory where notes are stored (defaults to current `.` directory).
+
+### 📄 Commands
+
+#### `ls` – List all notes
+
+```bash
+gonote ls [options]
+```
+
+**Options:**
+
+| Flag               | Description                            |
+|--------------------|----------------------------------------|
+| `-o`               | Output format. Default: `table`        |
+| `-t`               | Filter notes by tags (AND logic)       |
+| `-tor`             | Filter notes by tags (OR logic)        |
+| `-xid`             | Regex match for ID                     |
+| `-xtitle`          | Regex match for title                  |
+| `-tableIdWidth`    | Set ID column width                    |
+| `-tableTitleWidth` | Set Title column width                 |
+| `-tableTagsWidth`  | Set Tags column width                  |
+
+**Example:**
+
+```bash
+gonote ls -t bug -xtitle "auth"
+```
+
+#### `info` – Display summary info about notes
+
+```bash
+gonote info [options]
+```
+
+**Options are the same as in `ls`**.
+
+**Example Output:**
+
+```
+Notes: 9
+Tags: 
+    bug: 7
+    fixed: 3
+    frontend: 3
+    md: 1
+    remind: 1
+    skip: 2
+    todo: 2
+```
+
+#### `show` – Show full note content
+
+```bash
+gonote show <NOTE_ID>
+```
+
+Displays the complete content of a note identified by its `id`.
+
+**Example:**
+
+```bash
+gonote show MD-HELLO
+```
+
+---
+
+## 📁 Example Output
+
+### `ls`
+
+```
+ID                        TITLE                                                     TAGS                      PATH
+--------------------------------------------------------------------------------------------------------------
+MD-HELLO                  Welcome Note                                              md                        md/note.md:1
+BUG-001                   Login issue on dashboard                                  bug, fixed                note.yaml:2
+BUG-002                   Crash on payment success callback                         bug, remind, todo         note.yaml:26
+BUG-003                   Notification system not triggering alerts properly        bug, fixed                note.yaml:35
+```
+
+### `info`
+
+```
+Notes: 9
+Tags: 
+    bug: 7
+    fixed: 3
+    frontend: 3
+    md: 1
+    remind: 1
+    skip: 2
+    todo: 2
+```
+
+### `show`
+
+```markdown
+---
+id: MD-HELLO
+title: "Welcome Note"
+tags: ["md"]
+---
+
+# Hello, GoNote!
+
+This is a sample markdown note powered by GoNote.
+```
+
+---
+
+## 🔧 Installation
+
+Build it from source:
+
+```bash
+go build -o gonote
+```
+
+Or add it to your `$GOPATH/bin` for global access.
