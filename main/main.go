@@ -19,6 +19,8 @@ func main() {
 		switch command {
 		case "ls":
 			LsCommand(conf, args[1:])
+		case "show":
+			ShowCommand(conf, args[1:])
 		default:
 			NotFoundCommand(command)
 		}
@@ -63,19 +65,19 @@ func GetNoteData(filePath string) ([]Note, error) {
 }
 
 func YamlNotes(path string, file *os.File) ([]Note, error) {
-	var note NoteFile
+	var note NoteFileYaml
 	if err := yaml.NewDecoder(file).Decode(&note); err != nil {
 		return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
 	}
 	var notes []Note
 	for _, note := range note.Notes {
-		note.Path = path
+		note.PathY = path
 		notes = append(notes, note)
 	}
 	return notes, nil
 }
 
-func MarkdownNote(path string, file *os.File) (*Note, error) {
+func MarkdownNote(path string, file *os.File) (*NoteMd, error) {
 	var buf bytes.Buffer
 	scanner := bufio.NewScanner(file)
 
@@ -94,11 +96,11 @@ func MarkdownNote(path string, file *os.File) (*Note, error) {
 		if err := scanner.Err(); err != nil{
 			return nil, fmt.Errorf("markdown: Unable to parse markdown file %s. %w", path, err)
 		} else if scanner.Text() == "---" {
-			var note Note
+			var note NoteMd
 			if err := yaml.Unmarshal(buf.Bytes(), &note); err != nil {
 				return nil, fmt.Errorf("markdown: Unable to parse metadata in note. %w", err)
 			} else {
-				note.Path = path
+				note.PathM = path
 				return &note, nil
 			}
 		} else {
@@ -132,14 +134,14 @@ func FindAllNotesFiles(basePath string) ([]string, error) {
 func NoteTagsFilter(note Note, tags, tagsOr []string) bool {
 	if len(tags) > 0 {
 		for _, t := range tags {
-			if !slices.Contains(note.Tags, t) {
+			if !slices.Contains(note.Tags(), t) {
 				return false
 			}
 		}
 	}
 	if len(tagsOr) > 0 {
 		for _, t := range tagsOr {
-			if slices.Contains(note.Tags, t) {
+			if slices.Contains(note.Tags(), t) {
 				return true
 			}
 		}

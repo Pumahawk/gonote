@@ -16,8 +16,8 @@ var validOutputFlags = []string{
 
 type NotePrintFunc = func(Note)
 type LsConf struct {
-	XTitle string
-	XId string
+	XTitle *regexp.Regexp
+	XId *regexp.Regexp
 	Tags []string
 	TagsOr []string
 	Output string
@@ -28,18 +28,10 @@ type LsConf struct {
 
 func LsCommand(conf AppConfig, args []string) {
 	lsConf := LsFlags(args)
-	rxId, err := regexp.Compile(lsConf.XId)
-	if err != nil {
-		log.Fatalf("ls command: Invalid regex id. regex=%s. %v", lsConf.XId, err)
-	}
-	rxTitle, err := regexp.Compile(lsConf.XTitle)
-	if err != nil {
-		log.Fatalf("ls command: Invalid regex title. regex=%s. %v", lsConf.XTitle, err)
-	}
 
 	files, err := FindAllNotesFiles(conf.RootPath)
 	if err != nil {
-		log.Fatalf("main: Unable to read notes files %v", err)
+		log.Fatalf("ls: Unable to read notes files %v", err)
 	}
 	notePrintFunc := NotePrint(lsConf)
 	for _, file := range files {
@@ -51,10 +43,10 @@ func LsCommand(conf AppConfig, args []string) {
 			if !NoteTagsFilter(note, lsConf.Tags, lsConf.TagsOr) {
 				continue
 			}
-			if !rxId.MatchString(note.Id) {
+			if !lsConf.XId.MatchString(note.Id()) {
 				continue
 			}
-			if !rxTitle.MatchString(note.Title) {
+			if !lsConf.XTitle.MatchString(note.Title()) {
 				continue
 			}
 			notePrintFunc(note)
@@ -65,17 +57,21 @@ func LsCommand(conf AppConfig, args []string) {
 func LsFlags(args []string) LsConf {
 	var conf LsConf
 	lsf := flag.NewFlagSet("ls", 0)
-	lsf.StringVar(&conf.XId, "xid", "", "Regex match id")
-	lsf.StringVar(&conf.XTitle, "xtitle", "", "Regex match title")
 	lsf.StringVar(&conf.Output, "o", "table", "Output format. [table]")
 	lsf.IntVar(&conf.TableIdWidth, "tableIdWidth", 24, "Table width Id")
 	lsf.IntVar(&conf.TableTitleWidth, "tableTitleWidth", 60, "Table width Title")
 	lsf.IntVar(&conf.TableTagsWidth, "tableTagsWidth", 30, "Table width Tags")
+	xId := lsf.String("xid", "", "Regex match id")
+	xTitle := lsf.String("xtitle", "", "Regex match title")
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
 	err := lsf.Parse(args)
 	if err != nil {
-		os.Exit(0)
+		if err == flag.ErrHelp {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
 	}
 
 	if *tags != "" {
@@ -89,6 +85,18 @@ func LsFlags(args []string) LsConf {
 	if !slices.Contains(validOutputFlags, conf.Output) {
 		log.Fatalf("Invalid output flag %s", conf.Output)
 	}
+
+	rxId, err := regexp.Compile(*xId)
+	if err != nil {
+		log.Fatalf("ls command: Invalid regex id. regex=%s. %v", rxId, err)
+	}
+	conf.XId = rxId
+
+	rxTitle, err := regexp.Compile(*xTitle)
+	if err != nil {
+		log.Fatalf("ls command: Invalid regex title. regex=%s. %v", rxTitle, err)
+	}
+	conf.XTitle = rxTitle
 	return conf
 }
 
@@ -108,9 +116,9 @@ func TablePrintNote(conf LsConf) NotePrintFunc {
 	fmt.Println(strings.Repeat("-", conf.TableIdWidth + conf.TableTitleWidth + conf.TableTagsWidth + 10) + "----------------------------------------")
 
 	return func(n Note) {
-		title := truncate(n.Title, conf.TableTitleWidth)
-		tags := truncate(strings.Join(n.Tags, ", "), conf.TableTagsWidth)
-		fmt.Printf(rowFmt, n.Id, title, tags, n.Path)
+		title := truncate(n.Title(), conf.TableTitleWidth)
+		tags := truncate(strings.Join(n.Tags(), ", "), conf.TableTagsWidth)
+		fmt.Printf(rowFmt, n.Id(), title, tags, n.Path())
 	}
 }
 
