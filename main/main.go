@@ -41,9 +41,8 @@ func PrintHelpMessage() {
 	fmt.Println("Commands:")
 	fmt.Println()
 	fmt.Println("ls - Print all notes")
-	fmt.Println("stat - Print result information")
+	fmt.Println("info - Print result information")
 	fmt.Println("show - Print note details")
-	fmt.Println("edit - Open note with favourite editor")
 }
 
 func GetNoteData(filePath string) ([]Note, error) {
