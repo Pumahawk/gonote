@@ -10,6 +10,8 @@ import (
 	"slices"
 
 	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
 )
 
 func main() {
@@ -43,17 +45,15 @@ func PrintHelpMessage() {
 }
 
 func GetNoteData(filePath string) ([]Note, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("main: Unable to open note file. %w", err)
-	}
-	defer file.Close()
-
 	if regexp.MustCompile("\\.yaml$").MatchString(filePath) {
-		return YamlNotes(filePath, file)
+		return YamlNotes(filePath)
 	}
-
 	if regexp.MustCompile("\\.md$").MatchString(filePath) {
+		file, err := os.Open(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("main: Unable to open note file. %w", err)
+		}
+		defer file.Close()
 		note, err := MarkdownNote(filePath, file) 
 		if err != nil {
 			return nil, fmt.Errorf("main: Unable to read Markdown note: %s. %w", filePath, err)
@@ -64,15 +64,27 @@ func GetNoteData(filePath string) ([]Note, error) {
 	return nil, fmt.Errorf("main: Invalid note extension, supported [md, yaml]. Path %s", filePath)
 }
 
-func YamlNotes(path string, file *os.File) ([]Note, error) {
-	var note NoteFileYaml
-	if err := yaml.NewDecoder(file).Decode(&note); err != nil {
-		return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
-	}
+func YamlNotes(path string) ([]Note, error) {
 	var notes []Note
-	for _, note := range note.Notes {
-		note.PathY = path
-		notes = append(notes, note)
+	f, _ := parser.ParseFile(path, parser.ParseComments)
+	for _, doc := range f.Docs {
+		if mapNode, ok := doc.Body.(*ast.MappingNode); ok {
+			for _, v := range mapNode.Values {
+				if v.Key.String() == "notes" {
+						if sqn, ok := v.Value.(*ast.SequenceNode); ok {
+							for _, n := range sqn.Values {
+								var note NoteYaml
+								if err := yaml.NodeToValue(n, &note); err != nil {
+									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
+								}
+								note.pathY = path
+								note.lineY = n.GetToken().Position.Line
+								notes = append(notes, note)
+							}
+						}
+				}
+			}
+		}
 	}
 	return notes, nil
 }

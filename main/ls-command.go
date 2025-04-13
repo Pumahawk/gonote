@@ -110,7 +110,8 @@ func NotePrint(conf LsConf) NotePrintFunc {
 func TablePrintNote(conf LsConf) NotePrintFunc {
 	headerFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s\n",
 	conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
-	rowFmt := headerFmt
+	rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s:%%d\n",
+	conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
 
 	fmt.Printf(headerFmt, "ID", "TITLE", "TAGS", "PATH")
 	fmt.Println(strings.Repeat("-", conf.TableIdWidth + conf.TableTitleWidth + conf.TableTagsWidth + 10) + "----------------------------------------")
@@ -118,7 +119,7 @@ func TablePrintNote(conf LsConf) NotePrintFunc {
 	return func(n Note) {
 		title := truncate(n.Title(), conf.TableTitleWidth)
 		tags := truncate(strings.Join(n.Tags(), ", "), conf.TableTagsWidth)
-		fmt.Printf(rowFmt, n.Id(), title, tags, n.Path())
+		fmt.Printf(rowFmt, n.Id(), title, tags, n.Path(), n.Line())
 	}
 }
 

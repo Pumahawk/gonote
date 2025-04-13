@@ -4,11 +4,8 @@ import (
 	"time"
 )
 
-type NoteFileYaml struct {
-	Notes []NoteYaml `yaml:"notes"`
-}
-
 type Note interface {
+	Line() int
 	Id() string
 	Path() string
 	Title() string
@@ -19,7 +16,8 @@ type Note interface {
 
 type NoteYaml struct {
 	IdY string `yaml:"id"`
-	PathY string
+	pathY string
+	lineY int
 	TitleY string `yaml:"title"`
 	TagsY []string `yaml:"tags"`
 	CreateAtY time.Time `yaml:"createAt"`
@@ -27,12 +25,16 @@ type NoteYaml struct {
 	NoteY string `yaml:"note"`
 }
 
+func (n NoteYaml) Line() int {
+	return n.lineY
+}
+
 func (n NoteYaml) Id() string {
 	return n.IdY
 }
 
 func (n NoteYaml) Path() string {
-	return n.PathY
+	return n.pathY
 }
 
 func (n NoteYaml) Title() string {
@@ -58,6 +60,10 @@ type NoteMd struct {
 	TagsM []string `yaml:"tags"`
 	CreateAtM time.Time `yaml:"createAt"`
 	UpdateAtM time.Time `yaml:"updateAt"`
+}
+
+func (n NoteMd) Line() int {
+	return 1
 }
 
 func (n NoteMd) Id() string {
