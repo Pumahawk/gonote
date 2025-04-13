@@ -27,7 +27,7 @@ type LsConf struct {
 }
 
 func LsCommand(conf AppConfig, args []string) {
-	lsConf := LsFlags(args)
+	lsConf, args := LsFlags(args)
 
 	files, err := FindAllNotesFiles(conf.RootPath, args)
 	if err != nil {
@@ -54,7 +54,7 @@ func LsCommand(conf AppConfig, args []string) {
 	}
 }
 
-func LsFlags(args []string) LsConf {
+func LsFlags(args []string) (LsConf, []string) {
 	var conf LsConf
 	lsf := flag.NewFlagSet("ls", 0)
 	lsf.StringVar(&conf.Output, "o", "table", "Output format. [table]")
@@ -97,7 +97,7 @@ func LsFlags(args []string) LsConf {
 		log.Fatalf("ls command: Invalid regex title. regex=%s. %v", rxTitle, err)
 	}
 	conf.XTitle = rxTitle
-	return conf
+	return conf, lsf.Args()
 }
 
 func NotePrint(conf LsConf) NotePrintFunc {
