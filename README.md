@@ -18,6 +18,7 @@
 ### YAML Example
 
 ```yaml
+notes:
 - id: BUG-001
   title: "Login issue on dashboard"
   tags: [ "bug", "todo" ]
