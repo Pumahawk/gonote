@@ -71,6 +71,13 @@ func InfoFlags(args []string) (InfoConf, []string) {
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
 	err := lsf.Parse(args)
+	if err != nil {
+		if err == flag.ErrHelp {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
+	}
 
 	if *tags != "" {
 		conf.Tags = strings.Split(*tags, ",")
@@ -92,12 +99,5 @@ func InfoFlags(args []string) (InfoConf, []string) {
 	}
 	conf.XTitle = rxTitle
 
-	if err != nil {
-		if err == flag.ErrHelp {
-			os.Exit(0)
-		} else {
-			os.Exit(1)
-		}
-	}
 	return conf, lsf.Args()
 }
