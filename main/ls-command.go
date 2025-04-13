@@ -16,14 +16,14 @@ var validOutputFlags = []string{
 
 type NotePrintFunc = func(Note)
 type LsConf struct {
-	XTitle *regexp.Regexp
-	XId *regexp.Regexp
-	Tags []string
-	TagsOr []string
-	Output string
-	TableIdWidth int
+	XTitle          *regexp.Regexp
+	XId             *regexp.Regexp
+	Tags            []string
+	TagsOr          []string
+	Output          string
+	TableIdWidth    int
 	TableTitleWidth int
-	TableTagsWidth int
+	TableTagsWidth  int
 }
 
 func LsCommand(conf AppConfig, args []string) {
@@ -109,12 +109,12 @@ func NotePrint(conf LsConf) NotePrintFunc {
 
 func TablePrintNote(conf LsConf) NotePrintFunc {
 	headerFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s\n",
-	conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
+		conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
 	rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s:%%d\n",
-	conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
+		conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
 
 	fmt.Printf(headerFmt, "ID", "TITLE", "TAGS", "PATH")
-	fmt.Println(strings.Repeat("-", conf.TableIdWidth + conf.TableTitleWidth + conf.TableTagsWidth + 10) + "----------------------------------------")
+	fmt.Println(strings.Repeat("-", conf.TableIdWidth+conf.TableTitleWidth+conf.TableTagsWidth+10) + "----------------------------------------")
 
 	return func(n Note) {
 		title := truncate(n.Title(), conf.TableTitleWidth)

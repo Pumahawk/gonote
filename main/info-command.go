@@ -12,11 +12,10 @@ import (
 
 type InfoConf struct {
 	XTitle *regexp.Regexp
-	XId *regexp.Regexp
-	Tags []string
+	XId    *regexp.Regexp
+	Tags   []string
 	TagsOr []string
 }
-
 
 func InfoCommand(conf AppConfig, args []string) {
 	infoConf, args := InfoFlags(args)

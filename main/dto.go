@@ -15,14 +15,14 @@ type Note interface {
 }
 
 type NoteYaml struct {
-	IdY string `yaml:"id"`
-	pathY string
-	lineY int
-	TitleY string `yaml:"title"`
-	TagsY []string `yaml:"tags"`
+	IdY       string `yaml:"id"`
+	pathY     string
+	lineY     int
+	TitleY    string    `yaml:"title"`
+	TagsY     []string  `yaml:"tags"`
 	CreateAtY time.Time `yaml:"createAt"`
 	UpdateAtY time.Time `yaml:"updateAt"`
-	NoteY string `yaml:"note"`
+	NoteY     string    `yaml:"note"`
 }
 
 func (n NoteYaml) Line() int {
@@ -54,10 +54,10 @@ func (n NoteYaml) UpdateAt() time.Time {
 }
 
 type NoteMd struct {
-	IdM string `yaml:"id"`
-	PathM string
-	TitleM string `yaml:"title"`
-	TagsM []string `yaml:"tags"`
+	IdM       string `yaml:"id"`
+	PathM     string
+	TitleM    string    `yaml:"title"`
+	TagsM     []string  `yaml:"tags"`
 	CreateAtM time.Time `yaml:"createAt"`
 	UpdateAtM time.Time `yaml:"updateAt"`
 }
@@ -89,4 +89,3 @@ func (n NoteMd) CreateAt() time.Time {
 func (n NoteMd) UpdateAt() time.Time {
 	return n.UpdateAtM
 }
-

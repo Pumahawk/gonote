@@ -55,7 +55,7 @@ func GetNoteData(filePath string) ([]Note, error) {
 			return nil, fmt.Errorf("main: Unable to open note file. %w", err)
 		}
 		defer file.Close()
-		note, err := MarkdownNote(filePath, file) 
+		note, err := MarkdownNote(filePath, file)
 		if err != nil {
 			return nil, fmt.Errorf("main: Unable to read Markdown note: %s. %w", filePath, err)
 		}
@@ -72,17 +72,17 @@ func YamlNotes(path string) ([]Note, error) {
 		if mapNode, ok := doc.Body.(*ast.MappingNode); ok {
 			for _, v := range mapNode.Values {
 				if v.Key.String() == "notes" {
-						if sqn, ok := v.Value.(*ast.SequenceNode); ok {
-							for _, n := range sqn.Values {
-								var note NoteYaml
-								if err := yaml.NodeToValue(n, &note); err != nil {
-									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
-								}
-								note.pathY = path
-								note.lineY = n.GetToken().Position.Line
-								notes = append(notes, note)
+					if sqn, ok := v.Value.(*ast.SequenceNode); ok {
+						for _, n := range sqn.Values {
+							var note NoteYaml
+							if err := yaml.NodeToValue(n, &note); err != nil {
+								return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
 							}
+							note.pathY = path
+							note.lineY = n.GetToken().Position.Line
+							notes = append(notes, note)
 						}
+					}
 				}
 			}
 		}
@@ -106,7 +106,7 @@ func MarkdownNote(path string, file *os.File) (*NoteMd, error) {
 	}
 
 	for scanner.Scan() {
-		if err := scanner.Err(); err != nil{
+		if err := scanner.Err(); err != nil {
 			return nil, fmt.Errorf("markdown: Unable to parse markdown file %s. %w", path, err)
 		} else if scanner.Text() == "---" {
 			var note NoteMd
