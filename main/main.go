@@ -111,23 +111,35 @@ func MarkdownNote(path string, file *os.File) (*NoteMd, error) {
 	return nil, fmt.Errorf("markdown: Not found metadata note")
 }
 
-func FindAllNotesFiles(basePath string) ([]string, error) {
+func FindAllNotesFiles(basePath string, subPath []string) ([]string, error) {
 	var files []string
 	root := os.DirFS(basePath)
-	fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() {
-			if regexp.MustCompile("\\.yaml$").MatchString(d.Name()) || regexp.MustCompile("\\.md$").MatchString(d.Name()) {
-				if basePath == "." {
-					files = append(files, path)
-				} else {
-					files = append(files, fmt.Sprintf("%s%c%s", basePath, os.PathSeparator, path))
-				}
+	if len(subPath) == 0 {
+		subPath = []string{"."}
+	}
+	for _, sb := range subPath {
+		fs.WalkDir(root, sb, func(path string, d fs.DirEntry, err error) error {
+			if d == nil {
+				return nil
 			}
-		} else if regexp.MustCompile("^\\..").MatchString(d.Name()) {
-			return fs.SkipDir
-		}
-		return nil
-	})
+			if !d.IsDir() {
+				if regexp.MustCompile("\\.yaml$").MatchString(d.Name()) || regexp.MustCompile("\\.md$").MatchString(d.Name()) {
+					var file string
+					if basePath == "." {
+						file = path
+					} else {
+						file = fmt.Sprintf("%s%c%s", basePath, os.PathSeparator, path)
+					}
+					if !slices.Contains(files, file) {
+						files = append(files, file)
+					}
+				}
+			} else if regexp.MustCompile("^\\..").MatchString(d.Name()) {
+				return fs.SkipDir
+			}
+			return nil
+		})
+	}
 	return files, nil
 }
 

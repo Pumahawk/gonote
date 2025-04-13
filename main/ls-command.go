@@ -29,7 +29,7 @@ type LsConf struct {
 func LsCommand(conf AppConfig, args []string) {
 	lsConf := LsFlags(args)
 
-	files, err := FindAllNotesFiles(conf.RootPath)
+	files, err := FindAllNotesFiles(conf.RootPath, args)
 	if err != nil {
 		log.Fatalf("ls: Unable to read notes files %v", err)
 	}

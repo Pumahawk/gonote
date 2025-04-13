@@ -22,7 +22,7 @@ func ShowCommand(conf AppConfig, args []string) {
 
 	noteId := args[0]
 	
-	files, err := FindAllNotesFiles(conf.RootPath)
+	files, err := FindAllNotesFiles(conf.RootPath, []string{})
 	if err != nil {
 		log.Fatalf("show: Unable to read notes files %v", err)
 	}
