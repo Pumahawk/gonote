@@ -1,13 +1,27 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"log"
+	"os"
 	"time"
 )
 
+type NoteId = string
+
+type NoteLink struct {
+	Id NoteId
+	Title string
+	Path string
+	Line int
+}
+
 type Note interface {
 	Line() int
-	Id() string
+	Id() NoteId
 	Path() string
+	Links() []NoteId
 	Title() string
 	Tags() []string
 	CreateAt() time.Time
@@ -15,7 +29,7 @@ type Note interface {
 }
 
 type NoteYaml struct {
-	IdY       string `yaml:"id"`
+	IdY       NoteId `yaml:"id"`
 	pathY     string
 	lineY     int
 	TitleY    string    `yaml:"title"`
@@ -29,12 +43,22 @@ func (n NoteYaml) Line() int {
 	return n.lineY
 }
 
-func (n NoteYaml) Id() string {
+func (n NoteYaml) Id() NoteId {
 	return n.IdY
 }
 
 func (n NoteYaml) Path() string {
 	return n.pathY
+}
+
+func (n NoteYaml) Links() []NoteId {
+	r := bytes.NewReader([]byte(n.NoteY))
+	links, err := GetLinksFromText(r)
+	if err != nil {
+		log.Printf("noteyaml links: Unable to retrieve links from note %s. %v", n.Id(), err)
+		return nil
+	}
+	return links
 }
 
 func (n NoteYaml) Title() string {
@@ -72,6 +96,24 @@ func (n NoteMd) Id() string {
 
 func (n NoteMd) Path() string {
 	return n.PathM
+}
+
+func (n NoteMd) Links() []NoteId {
+	f, err := os.Open(n.Path())
+	if err != nil {
+		log.Printf("notemd: Unable to retrieve links from md noted, %v", err)
+		return nil
+	}
+	defer f.Close()
+	// Consume stream
+	r := bufio.NewReader(f)
+	MarkdownNote(r)
+	links, err := GetLinksFromText(r)
+	if err != nil {
+		log.Printf("notemd links: Unable to retrieve links from note %s. %v", n.Id(), err)
+		return nil
+	}
+	return links
 }
 
 func (n NoteMd) Title() string {

@@ -14,8 +14,9 @@ var validOutputFlags = []string{
 	"table",
 }
 
-type NotePrintFunc = func(Note)
+type NotePrintFunc = func(Note, []NoteId)
 type LsConf struct {
+	Links           bool
 	XTitle          *regexp.Regexp
 	XId             *regexp.Regexp
 	Tags            []string
@@ -49,7 +50,14 @@ func LsCommand(conf AppConfig, args []string) {
 			if !lsConf.XTitle.MatchString(note.Title()) {
 				continue
 			}
-			notePrintFunc(note)
+
+			var links []NoteId
+			if lsConf.Links {
+				for _, id := range note.Links() {
+					links = append(links, id)
+				}
+			}
+			notePrintFunc(note, links)
 		}
 	}
 }
@@ -58,6 +66,7 @@ func LsFlags(args []string) (LsConf, []string) {
 	var conf LsConf
 	lsf := flag.NewFlagSet("ls", 0)
 	lsf.StringVar(&conf.Output, "o", "table", "Output format. [table]")
+	lsf.BoolVar(&conf.Links, "links", false, "Retrieve links information")
 	lsf.IntVar(&conf.TableIdWidth, "tableIdWidth", 24, "Table width Id")
 	lsf.IntVar(&conf.TableTitleWidth, "tableTitleWidth", 60, "Table width Title")
 	lsf.IntVar(&conf.TableTagsWidth, "tableTagsWidth", 30, "Table width Tags")
@@ -116,10 +125,17 @@ func TablePrintNote(conf LsConf) NotePrintFunc {
 	fmt.Printf(headerFmt, "ID", "TITLE", "TAGS", "PATH")
 	fmt.Println(strings.Repeat("-", conf.TableIdWidth+conf.TableTitleWidth+conf.TableTagsWidth+10) + "----------------------------------------")
 
-	return func(n Note) {
+	return func(n Note, noteIds []NoteId) {
 		title := truncate(n.Title(), conf.TableTitleWidth)
 		tags := truncate(strings.Join(n.Tags(), ", "), conf.TableTagsWidth)
 		fmt.Printf(rowFmt, n.Id(), title, tags, n.Path(), n.Line())
+		for i, id := range noteIds {
+			prefix := "├─"
+			if i == len(noteIds) - 1 {
+				prefix = "└─"
+			}
+			fmt.Printf("%s %s\n", prefix, id)
+		}
 	}
 }
 

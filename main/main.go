@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"regexp"
@@ -55,7 +56,8 @@ func GetNoteData(filePath string) ([]Note, error) {
 			return nil, fmt.Errorf("main: Unable to open note file. %w", err)
 		}
 		defer file.Close()
-		note, err := MarkdownNote(filePath, file)
+		note, err := MarkdownNote(file)
+		note.PathM = filePath
 		if err != nil {
 			return nil, fmt.Errorf("main: Unable to read Markdown note: %s. %w", filePath, err)
 		}
@@ -90,30 +92,29 @@ func YamlNotes(path string) ([]Note, error) {
 	return notes, nil
 }
 
-func MarkdownNote(path string, file *os.File) (*NoteMd, error) {
+func MarkdownNote(r io.Reader) (*NoteMd, error) {
 	var buf bytes.Buffer
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(r)
 
 	if !scanner.Scan() {
-		return nil, fmt.Errorf("markdown: Unable to read first line, path=%s. %w", path, scanner.Err())
+		return nil, fmt.Errorf("markdown: Unable to read first line. %w", scanner.Err())
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("markdown: Unable to parse first line markdown file %s. %w", path, err)
+		return nil, fmt.Errorf("markdown: Unable to parse first line markdown. %w", err)
 	}
 	if scanner.Text() != "---" {
-		return nil, fmt.Errorf("markdown: Invalid first line. Expected ---. path=%s", path)
+		return nil, fmt.Errorf("markdown: Invalid first line. Expected ---.")
 	}
 
 	for scanner.Scan() {
 		if err := scanner.Err(); err != nil {
-			return nil, fmt.Errorf("markdown: Unable to parse markdown file %s. %w", path, err)
+			return nil, fmt.Errorf("markdown: Unable to parse markdown. %w", err)
 		} else if scanner.Text() == "---" {
 			var note NoteMd
 			if err := yaml.Unmarshal(buf.Bytes(), &note); err != nil {
 				return nil, fmt.Errorf("markdown: Unable to parse metadata in note. %w", err)
 			} else {
-				note.PathM = path
 				return &note, nil
 			}
 		} else {
@@ -173,4 +174,19 @@ func NoteTagsFilter(note Note, tags, tagsOr []string) bool {
 		return false
 	}
 	return true
+}
+
+func GetLinksFromText(r io.Reader) ([]NoteId, error) {
+	var b bytes.Buffer
+	if _, err := io.Copy(&b, r); err != nil {
+		return nil, fmt.Errorf("main get links: Unable to retrieve links from note reader. %w", err)
+	}
+	s := regexp.MustCompile("\\[\\[(.*)\\]\\]").FindAllStringSubmatch(b.String(), -1)
+	var nlinks []NoteId
+	for _, m := range s {
+		if len(m) > 0 {
+			nlinks = append(nlinks, m[1])
+		}
+	}
+	return nlinks, nil
 }
