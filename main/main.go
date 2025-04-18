@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"regexp"
 	"slices"
@@ -14,6 +15,8 @@ import (
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
 )
+
+var NotANote = fmt.Errorf("Invalid Markdown note")
 
 func main() {
 	conf, args := AppParseFlags()
@@ -57,10 +60,18 @@ func GetNoteData(filePath string) ([]Note, error) {
 		}
 		defer file.Close()
 		note, err := MarkdownNote(file)
-		note.PathM = filePath
-		if err != nil {
-			return nil, fmt.Errorf("main: Unable to read Markdown note: %s. %w", filePath, err)
+
+		if err == NotANote {
+			return []Note{}, nil
 		}
+
+		if err != nil {
+			log.Printf("main: Unable to read Markdown note: %s. %v", filePath, err)
+			return []Note{}, nil
+		}
+
+		note.PathM = filePath
+
 		return []Note{*note}, nil
 	}
 
@@ -101,10 +112,10 @@ func MarkdownNote(r io.Reader) (*NoteMd, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("markdown: Unable to parse first line markdown. %w", err)
+		return nil, NotANote
 	}
 	if scanner.Text() != "---" {
-		return nil, fmt.Errorf("markdown: Invalid first line. Expected ---.")
+		return nil, NotANote
 	}
 
 	for scanner.Scan() {
@@ -122,7 +133,7 @@ func MarkdownNote(r io.Reader) (*NoteMd, error) {
 			buf.WriteByte('\n')
 		}
 	}
-	return nil, fmt.Errorf("markdown: Not found metadata note")
+	return nil, NotANote
 }
 
 func FindAllNotesFiles(basePath string, subPath []string) ([]string, error) {
