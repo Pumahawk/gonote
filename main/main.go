@@ -201,3 +201,34 @@ func GetLinksFromText(r io.Reader) ([]NoteId, error) {
 	}
 	return nlinks, nil
 }
+
+
+type LineCounterReader struct {
+	Origin io.Reader
+	Counter int
+}
+
+func NewLineCounterReader(r io.Reader) LineCounterReader {
+	return LineCounterReader{
+		Origin: r,
+	}
+}
+
+func (lr *LineCounterReader) Read(p []byte) (n int, err error) {
+	n, err = lr.Origin.Read(p)
+	if err != nil {
+		return
+	}
+
+	if lr.Counter == 0 && n != 0 {
+		lr.Counter++
+	}
+
+	for i := 0; i < n; i++ {
+		if p[i] == '\n' {
+			lr.Counter++
+		}
+	}
+	return
+}
+
