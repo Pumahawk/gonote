@@ -20,32 +20,31 @@ type Note interface {
     Id() NoteId
     Title() string
     Tags() []string
-    Links() []Note
+    Links() []NoteId
     LastUpdate() *time.Time
     OpenRef() string
-    Note() []byte
 }
 
 // Define basic data for notes operations
 type BaseNote struct {
-	id NoteId `yaml:"id"`
-	title NoteId `yaml:"title"`
-	tags []string `yaml:"tags"`
-	links []Note `yaml:"links"`
+	IdV NoteId `yaml:"id"`
+	TitleV string `yaml:"title"`
+	TagsV []string `yaml:"tags"`
+	LinksV []NoteId `yaml:"links"`
 }
 
 func (n *BaseNote) Id() NoteId {
-	return n.id
+	return n.IdV
 }
 
 func (n *BaseNote) Title() NoteId {
-	return n.title
+	return n.TitleV
 }
 
 func (n *BaseNote) Tags() []string {
-	return n.tags
+	return n.TagsV
 }
 
-func (n *BaseNote) Links() []Note {
-	return n.links
+func (n *BaseNote) Links() []NoteId {
+	return n.LinksV
 }

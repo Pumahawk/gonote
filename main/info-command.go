@@ -19,6 +19,11 @@ type InfoConf struct {
 	TagsOr []string
 }
 
+type FilePath struct {
+	Absolute string
+	Relative string
+}
+
 func InfoCommand(conf AppConfig, args []string) {
 	infoConf, args := InfoFlags(args)
 
@@ -36,7 +41,7 @@ func InfoCommand(conf AppConfig, args []string) {
 	tagsCount := make(map[string]int)
 
 	for _, file := range files {
-		notes, err := GetNoteData(repo, file)
+		notes, err := GetNoteData(repo, file.Absolute, file.Relative)
 		if err != nil {
 			log.Fatalf("info: Unable to read file %s. %v", file, err)
 		}

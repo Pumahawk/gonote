@@ -46,7 +46,7 @@ func LsCommand(conf AppConfig, args []string) {
 
 	notePrintFunc := NotePrint(lsConf)
 	for _, file := range files {
-		notes, err := GetNoteData(repo, file)
+		notes, err := GetNoteData(repo, file.Absolute, file.Relative)
 		if err != nil {
 			log.Fatalf("main: Unable to read file %s. %v", file, err)
 		}
@@ -70,7 +70,7 @@ func LsCommand(conf AppConfig, args []string) {
 			var links []NoteId
 			if lsConf.Links {
 				for _, n := range note.Links() {
-					links = append(links, n.Id())
+					links = append(links, n)
 				}
 			}
 			notePrintFunc(note, links)

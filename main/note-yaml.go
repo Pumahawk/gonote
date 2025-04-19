@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 // Read all notes from YAML file
 // Use abstolutePath to Open file.
 // Use path as referiment for git interaction
-func ReadYamlNotes(repo *git.Repository, abstolutePath, path string) ([]Note, error) {
+func ReadYamlNotes(repo *git.Repository, abstolutePath, relativePath string) ([]Note, error) {
 	file, err := os.Open(abstolutePath)
 	if err != nil {
 		return nil, fmt.Errorf("yaml notes: Unable to open file %s. %w", abstolutePath, err)
@@ -41,13 +42,14 @@ func ReadYamlNotes(repo *git.Repository, abstolutePath, path string) ([]Note, er
 									BaseNote: &BaseNote{},
 								}
 								if err := yaml.NodeToValue(n, note.BaseNote); err != nil {
-									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
+									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", abstolutePath, err)
 								}
-								note.FilePath = path
+								note.FilePath = relativePath
+								note.AbsoluteFilePath = abstolutePath
 								note.LineStartNumber = n.GetToken().Position.Line
 								if previousNote != nil {
 									previousNote.LineEndNumber = note.LineStartNumber - 1
-									setLatUpdateTimeNote(previousNote, repo, path, previousNote.LineStartNumber, previousNote.LineEndNumber)
+									setLatUpdateTimeNote(previousNote, repo, relativePath, previousNote.LineStartNumber, previousNote.LineEndNumber)
 								}
 								notes = append(notes, note)
 								previousNote = note
@@ -55,7 +57,7 @@ func ReadYamlNotes(repo *git.Repository, abstolutePath, path string) ([]Note, er
 						}
 						if previousNote != nil {
 							previousNote.LineEndNumber = lineCounter
-							setLatUpdateTimeNote(previousNote, repo, path, previousNote.LineStartNumber, previousNote.LineEndNumber)
+							setLatUpdateTimeNote(previousNote, repo, relativePath, previousNote.LineStartNumber, previousNote.LineEndNumber)
 						}
 					}
 				}
@@ -103,14 +105,10 @@ func ReadAndCountLines(r io.Reader) ([]byte, int, error){
 type NoteYaml struct {
 	*BaseNote
 	FilePath string
+	AbsoluteFilePath string
 	LineStartNumber int
 	LineEndNumber int
 	lastUpdate *time.Time
-	openRef string
-}
-
-func (n *NoteYaml) Note() []byte {
-	return nil
 }
 
 func (n *NoteYaml) LastUpdate() *time.Time {
@@ -118,5 +116,47 @@ func (n *NoteYaml) LastUpdate() *time.Time {
 }
 
 func (n *NoteYaml) OpenRef() string {
-	return n.openRef
+	return fmt.Sprintf("%s%c%d", n.AbsoluteFilePath, os.PathSeparator, n.LineStartNumber)
+}
+
+func setLatUpdateTimeNote(note *NoteYaml, repo *git.Repository, relativePath string, lineStart, lineEnd int) {
+	t, err := GetLastUpdateLine(repo, relativePath, lineStart - 1, lineEnd - 1)
+	if err != nil {
+		log.Printf("yaml note: Unable to retrieve last update from note %s:%d start=%d end=%d. %v", note.FilePath, note.LineStartNumber, note.LineStartNumber, note.LineEndNumber, err)
+	} else {
+		note.lastUpdate = t
+	}
+}
+
+func GetLastUpdateLine(repo *git.Repository, path string, lineStart, lineEnd int) (*time.Time, error) {
+	opt := git.LogOptions{
+		PathFilter: func(s string) bool {
+			return path == s
+		},
+	}
+	it, err := repo.Log(&opt)
+	if err != nil {
+		return nil, fmt.Errorf("git: unable to get Log %w", err)
+	}
+	defer it.Close()
+	c, err := it.Next()
+	if err != nil {
+		return nil, fmt.Errorf("git: unable to get next log. %w", err)
+	}
+
+	br, err := git.Blame(c, path)
+	if err != nil {
+		return nil, fmt.Errorf("git: unable to get blame. %w", err)
+	}
+	if lineStart < len(br.Lines) && lineEnd < len(br.Lines) {
+			mxd := br.Lines[lineStart].Date
+			for _, l := range br.Lines[lineStart:lineEnd] {
+				if l.Date.Unix() > mxd.Unix() {
+					mxd = l.Date
+				}
+			}
+			return &mxd, nil
+	} else {
+		return nil, fmt.Errorf("git blame: invalid range of lines. lines: %d start: %d, end: %d.", len(br.Lines), lineStart, lineEnd)
+	}
 }

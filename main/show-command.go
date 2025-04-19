@@ -34,7 +34,7 @@ func ShowCommand(conf AppConfig, args []string) {
 	}
 
 	for _, f := range files {
-		notes, err := GetNoteData(repo, f)
+		notes, err := GetNoteData(repo, f.Absolute, f.Relative)
 		if err != nil {
 			log.Fatalf("show: Unable to read file %s. %v", f, err)
 		}
@@ -63,9 +63,10 @@ func ShowFlags(args []string) ShowConf {
 }
 
 func CatNote(n Note) error {
-	switch n.(type) {
-	case NoteMd:
-		f, err := os.Open(n.Path())
+	switch n := n.(type) {
+	case *NoteMarkdown:
+		absoluteFilePath := n.AbsoluteFilePath
+		f, err := os.Open(absoluteFilePath)
 		if err != nil {
 			return fmt.Errorf("show: Unable to open md file. %v", err)
 		}
