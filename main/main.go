@@ -10,7 +10,9 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"time"
 
+	"github.com/go-git/go-git/v5"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/ast"
 	"github.com/goccy/go-yaml/parser"
@@ -49,9 +51,9 @@ func PrintHelpMessage() {
 	fmt.Println("show - Print note details")
 }
 
-func GetNoteData(filePath string) ([]Note, error) {
+func GetNoteData(repo *git.Repository, filePath string) ([]Note, error) {
 	if regexp.MustCompile("\\.yaml$").MatchString(filePath) {
-		return YamlNotes(filePath)
+		return YamlNotes(repo, filePath)
 	}
 	if regexp.MustCompile("\\.md$").MatchString(filePath) {
 		file, err := os.Open(filePath)
@@ -78,22 +80,44 @@ func GetNoteData(filePath string) ([]Note, error) {
 	return nil, fmt.Errorf("main: Invalid note extension, supported [md, yaml]. Path %s", filePath)
 }
 
-func YamlNotes(path string) ([]Note, error) {
+func YamlNotes(repo *git.Repository, path string) ([]Note, error) {
 	var notes []Note
-	f, _ := parser.ParseFile(path, parser.ParseComments)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("yaml notes: Unable to open file %s. %w", path, err)
+	}
+
+	var bf bytes.Buffer
+	lineCounter := NewLineCounterReader(file)
+	io.Copy(&bf, &lineCounter)
+	file.Close()
+
+	f, _ := parser.ParseBytes(bf.Bytes(), parser.ParseComments)
 	for _, doc := range f.Docs {
 		if mapNode, ok := doc.Body.(*ast.MappingNode); ok {
 			for _, v := range mapNode.Values {
 				if v.Key.String() == "notes" {
 					if sqn, ok := v.Value.(*ast.SequenceNode); ok {
+						var pn *NoteYaml
 						for _, n := range sqn.Values {
-							var note NoteYaml
-							if err := yaml.NodeToValue(n, &note); err != nil {
-								return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
+							if n, ok := n.(*ast.MappingNode); ok {
+								var note NoteYaml
+								if err := yaml.NodeToValue(n, &note); err != nil {
+									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
+								}
+								note.pathY = path
+								note.lineY = n.GetToken().Position.Line
+								if pn != nil {
+									pn.lineEndY = note.lineY - 1
+									setLatUpdateTimeNote(pn, repo, path, pn.lineY, pn.lineEndY)
+								}
+								notes = append(notes, note)
+								pn = &note
 							}
-							note.pathY = path
-							note.lineY = n.GetToken().Position.Line
-							notes = append(notes, note)
+						}
+						if pn != nil {
+							pn.lineEndY = lineCounter.Counter
+							setLatUpdateTimeNote(pn, repo, path, pn.lineY, pn.lineEndY)
 						}
 					}
 				}
@@ -226,5 +250,48 @@ func (lr *LineCounterReader) Read(p []byte) (n int, err error) {
 		}
 	}
 	return
+}
+
+
+func GetLastUpdateLine(repo *git.Repository, path string, lineStart, lineEnd int) (*time.Time, error) {
+	opt := git.LogOptions{
+		PathFilter: func(s string) bool {
+			return path == s
+		},
+	}
+	it, err := repo.Log(&opt)
+	if err != nil {
+		return nil, fmt.Errorf("git: unable to get Log %w", err)
+	}
+	defer it.Close()
+	c, err := it.Next()
+	if err != nil {
+		return nil, fmt.Errorf("git: unable to get next log. %w", err)
+	}
+
+	br, err := git.Blame(c, path)
+	if err != nil {
+		return nil, fmt.Errorf("git: unable to get blame. %w", err)
+	}
+	if lineStart < len(br.Lines) && lineEnd < len(br.Lines) {
+			mxd := br.Lines[lineStart].Date
+			for _, l := range br.Lines[lineStart:lineEnd] {
+				if l.Date.Unix() > mxd.Unix() {
+					mxd = l.Date
+				}
+			}
+			return &mxd, nil
+	} else {
+		return nil, fmt.Errorf("git blame: invalid range of lines. lines: %d start: %d, end: %d.", len(br.Lines), lineStart, lineEnd)
+	}
+}
+
+func setLatUpdateTimeNote(note *NoteYaml, repo *git.Repository, relativePath string, lineStart, lineEnd int) {
+	t, err := GetLastUpdateLine(repo, relativePath, lineStart - 1, lineEnd - 1)
+	if err != nil {
+		log.Printf("yaml note: Unable to retrieve last update from note %s:%d start=%d end=%d. %v", note.Path(), note.Line(), lineStart, lineEnd, err)
+	} else {
+		note.UpdateAtY = t
+	}
 }
 

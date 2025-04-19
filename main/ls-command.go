@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
 )
 
 var validOutputFlags = []string{
@@ -34,9 +36,15 @@ func LsCommand(conf AppConfig, args []string) {
 	if err != nil {
 		log.Fatalf("ls: Unable to read notes files %v", err)
 	}
+
+	repo, err := git.PlainOpen(conf.RootPath)
+	if err != nil {
+		log.Fatalf("info: Unable to read git repository from root directory %s", conf.RootPath)
+	}
+
 	notePrintFunc := NotePrint(lsConf)
 	for _, file := range files {
-		notes, err := GetNoteData(file)
+		notes, err := GetNoteData(repo, file)
 		if err != nil {
 			log.Fatalf("main: Unable to read file %s. %v", file, err)
 		}

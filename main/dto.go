@@ -24,18 +24,17 @@ type Note interface {
 	Links() []NoteId
 	Title() string
 	Tags() []string
-	CreateAt() time.Time
-	UpdateAt() time.Time
+	UpdateAt() *time.Time
 }
 
 type NoteYaml struct {
 	IdY       NoteId `yaml:"id"`
 	pathY     string
 	lineY     int
+	lineEndY     int
 	TitleY    string    `yaml:"title"`
 	TagsY     []string  `yaml:"tags"`
-	CreateAtY time.Time `yaml:"createAt"`
-	UpdateAtY time.Time `yaml:"updateAt"`
+	UpdateAtY *time.Time `yaml:"updateAt"`
 	NoteY     string    `yaml:"note"`
 }
 
@@ -69,11 +68,7 @@ func (n NoteYaml) Tags() []string {
 	return n.TagsY
 }
 
-func (n NoteYaml) CreateAt() time.Time {
-	return n.CreateAtY
-}
-
-func (n NoteYaml) UpdateAt() time.Time {
+func (n NoteYaml) UpdateAt() *time.Time {
 	return n.UpdateAtY
 }
 
@@ -82,8 +77,7 @@ type NoteMd struct {
 	PathM     string
 	TitleM    string    `yaml:"title"`
 	TagsM     []string  `yaml:"tags"`
-	CreateAtM time.Time `yaml:"createAt"`
-	UpdateAtM time.Time `yaml:"updateAt"`
+	UpdateAtM *time.Time `yaml:"updateAt"`
 }
 
 func (n NoteMd) Line() int {
@@ -124,10 +118,6 @@ func (n NoteMd) Tags() []string {
 	return n.TagsM
 }
 
-func (n NoteMd) CreateAt() time.Time {
-	return n.CreateAtM
-}
-
-func (n NoteMd) UpdateAt() time.Time {
-	return n.UpdateAtM
+func (n NoteMd) UpdateAt() *time.Time {
+	return nil
 }
