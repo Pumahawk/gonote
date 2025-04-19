@@ -62,15 +62,15 @@ func LsCommand(conf AppConfig, args []string) {
 			}
 
 			if since := lsConf.Since; since != nil {
-				if updateAt := note.UpdateAt(); updateAt == nil || updateAt.Unix() < since.Unix() {
+				if updateAt := note.LastUpdate(); updateAt == nil || updateAt.Unix() < since.Unix() {
 					continue
 				}
 			}
 
 			var links []NoteId
 			if lsConf.Links {
-				for _, id := range note.Links() {
-					links = append(links, id)
+				for _, n := range note.Links() {
+					links = append(links, n.Id())
 				}
 			}
 			notePrintFunc(note, links)
@@ -144,7 +144,7 @@ func NotePrint(conf LsConf) NotePrintFunc {
 func TablePrintNote(conf LsConf) NotePrintFunc {
 	headerFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s\n",
 		conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
-	rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s:%%d\n",
+	rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%s\n",
 		conf.TableIdWidth, conf.TableTitleWidth, conf.TableTagsWidth)
 
 	fmt.Printf(headerFmt, "ID", "TITLE", "TAGS", "PATH")
@@ -153,7 +153,7 @@ func TablePrintNote(conf LsConf) NotePrintFunc {
 	return func(n Note, noteIds []NoteId) {
 		title := truncate(n.Title(), conf.TableTitleWidth)
 		tags := truncate(strings.Join(n.Tags(), ", "), conf.TableTagsWidth)
-		fmt.Printf(rowFmt, n.Id(), title, tags, n.Path(), n.Line())
+		fmt.Printf(rowFmt, n.Id(), title, tags, n.OpenRef())
 		for i, id := range noteIds {
 			prefix := "├─"
 			if i == len(noteIds) - 1 {
