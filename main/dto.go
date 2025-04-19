@@ -1,123 +1,55 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
-	"log"
-	"os"
 	"time"
+
+	"github.com/go-git/go-git/v5"
 )
 
 type NoteId = string
 
-type NoteLink struct {
-	Id NoteId
-	Title string
+// Note main directory
+// Must contain git repository
+type Repository struct {
 	Path string
-	Line int
+	Git *git.Repository
 }
 
+// Define basic note operations
 type Note interface {
-	Line() int
-	Id() NoteId
-	Path() string
-	Links() []NoteId
-	Title() string
-	Tags() []string
-	UpdateAt() *time.Time
+    Id() NoteId
+    Tags() []string
+    Links() []Note
+    LastUpdate() *time.Time
+    OpenRef() string
+    Note() []byte
 }
 
-type NoteYaml struct {
-	IdY       NoteId `yaml:"id"`
-	pathY     string
-	lineY     int
-	lineEndY     int
-	TitleY    string    `yaml:"title"`
-	TagsY     []string  `yaml:"tags"`
-	UpdateAtY *time.Time `yaml:"updateAt"`
-	NoteY     string    `yaml:"note"`
+// Define basic data for notes operations
+type BaseNote struct {
+    id NoteId
+    tags []string
+    links []Note
+    lastUpdate *time.Time
+    openRef string
 }
 
-func (n NoteYaml) Line() int {
-	return n.lineY
+func (n *BaseNote) Id() NoteId {
+	return n.id
 }
 
-func (n NoteYaml) Id() NoteId {
-	return n.IdY
+func (n *BaseNote) Tags() []string {
+	return n.tags
 }
 
-func (n NoteYaml) Path() string {
-	return n.pathY
+func (n *BaseNote) Links() []Note {
+	return n.links
 }
 
-func (n NoteYaml) Links() []NoteId {
-	r := bytes.NewReader([]byte(n.NoteY))
-	links, err := GetLinksFromText(r)
-	if err != nil {
-		log.Printf("noteyaml links: Unable to retrieve links from note %s. %v", n.Id(), err)
-		return nil
-	}
-	return links
+func (n *BaseNote) LastUpdate() *time.Time {
+	return n.lastUpdate
 }
 
-func (n NoteYaml) Title() string {
-	return n.TitleY
-}
-
-func (n NoteYaml) Tags() []string {
-	return n.TagsY
-}
-
-func (n NoteYaml) UpdateAt() *time.Time {
-	return n.UpdateAtY
-}
-
-type NoteMd struct {
-	IdM       string `yaml:"id"`
-	PathM     string
-	TitleM    string    `yaml:"title"`
-	TagsM     []string  `yaml:"tags"`
-	UpdateAtM *time.Time `yaml:"updateAt"`
-}
-
-func (n NoteMd) Line() int {
-	return 1
-}
-
-func (n NoteMd) Id() string {
-	return n.IdM
-}
-
-func (n NoteMd) Path() string {
-	return n.PathM
-}
-
-func (n NoteMd) Links() []NoteId {
-	f, err := os.Open(n.Path())
-	if err != nil {
-		log.Printf("notemd: Unable to retrieve links from md noted, %v", err)
-		return nil
-	}
-	defer f.Close()
-	// Consume stream
-	r := bufio.NewReader(f)
-	MarkdownNote(r)
-	links, err := GetLinksFromText(r)
-	if err != nil {
-		log.Printf("notemd links: Unable to retrieve links from note %s. %v", n.Id(), err)
-		return nil
-	}
-	return links
-}
-
-func (n NoteMd) Title() string {
-	return n.TitleM
-}
-
-func (n NoteMd) Tags() []string {
-	return n.TagsM
-}
-
-func (n NoteMd) UpdateAt() *time.Time {
-	return nil
+func (n *BaseNote) OpenRef() string {
+	return n.openRef
 }

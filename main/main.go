@@ -227,32 +227,6 @@ func GetLinksFromText(r io.Reader) ([]NoteId, error) {
 }
 
 
-type LineCounterReader struct {
-	Origin io.Reader
-	Counter int
-}
-
-func NewLineCounterReader(r io.Reader) LineCounterReader {
-	return LineCounterReader{
-		Origin: r,
-	}
-}
-
-func (lr *LineCounterReader) Read(p []byte) (n int, err error) {
-	n, err = lr.Origin.Read(p)
-	if err != nil {
-		return
-	}
-
-	for i := 0; i < n; i++ {
-		if p[i] == '\n' {
-			lr.Counter++
-		}
-	}
-	return
-}
-
-
 func GetLastUpdateLine(repo *git.Repository, path string, lineStart, lineEnd int) (*time.Time, error) {
 	opt := git.LogOptions{
 		PathFilter: func(s string) bool {
@@ -291,7 +265,7 @@ func setLatUpdateTimeNote(note *NoteYaml, repo *git.Repository, relativePath str
 	if err != nil {
 		log.Printf("yaml note: Unable to retrieve last update from note %s:%d start=%d end=%d. %v", note.Path(), note.Line(), lineStart, lineEnd, err)
 	} else {
-		note.UpdateAtY = t
+		note.BaseNote.lastUpdate = t
 	}
 }
 
