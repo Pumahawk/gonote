@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	yaml "github.com/goccy/go-yaml"
@@ -39,8 +40,7 @@ func ReadYamlNotes(repo *git.Repository, abstolutePath, path string) ([]Note, er
 								note := &NoteYaml{
 									BaseNote: &BaseNote{},
 								}
-								// TODO detine correct mapping from Node to Value
-								if err := yaml.NodeToValue(n, note); err != nil {
+								if err := yaml.NodeToValue(n, note.BaseNote); err != nil {
 									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
 								}
 								note.FilePath = path
@@ -105,8 +105,18 @@ type NoteYaml struct {
 	FilePath string
 	LineStartNumber int
 	LineEndNumber int
+	lastUpdate *time.Time
+	openRef string
 }
 
 func (n *NoteYaml) Note() []byte {
 	return nil
+}
+
+func (n *NoteYaml) LastUpdate() *time.Time {
+	return n.lastUpdate
+}
+
+func (n *NoteYaml) OpenRef() string {
+	return n.openRef
 }
