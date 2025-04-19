@@ -101,8 +101,8 @@ func YamlNotes(repo *git.Repository, path string) ([]Note, error) {
 						var pn *NoteYaml
 						for _, n := range sqn.Values {
 							if n, ok := n.(*ast.MappingNode); ok {
-								var note NoteYaml
-								if err := yaml.NodeToValue(n, &note); err != nil {
+								note := &NoteYaml{}
+								if err := yaml.NodeToValue(n, note); err != nil {
 									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", path, err)
 								}
 								note.pathY = path
@@ -112,7 +112,7 @@ func YamlNotes(repo *git.Repository, path string) ([]Note, error) {
 									setLatUpdateTimeNote(pn, repo, path, pn.lineY, pn.lineEndY)
 								}
 								notes = append(notes, note)
-								pn = &note
+								pn = note
 							}
 						}
 						if pn != nil {

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 )
@@ -27,6 +28,7 @@ type LsConf struct {
 	TableIdWidth    int
 	TableTitleWidth int
 	TableTagsWidth  int
+	Since		*time.Time
 }
 
 func LsCommand(conf AppConfig, args []string) {
@@ -59,6 +61,12 @@ func LsCommand(conf AppConfig, args []string) {
 				continue
 			}
 
+			if since := lsConf.Since; since != nil {
+				if updateAt := note.UpdateAt(); updateAt == nil || updateAt.Unix() < since.Unix() {
+					continue
+				}
+			}
+
 			var links []NoteId
 			if lsConf.Links {
 				for _, id := range note.Links() {
@@ -82,6 +90,7 @@ func LsFlags(args []string) (LsConf, []string) {
 	xTitle := lsf.String("xtitle", "", "Regex match title")
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
+	since := lsf.String("since", "", "Since date")
 	err := lsf.Parse(args)
 	if err != nil {
 		if err == flag.ErrHelp {
@@ -114,6 +123,14 @@ func LsFlags(args []string) (LsConf, []string) {
 		log.Fatalf("ls command: Invalid regex title. regex=%s. %v", rxTitle, err)
 	}
 	conf.XTitle = rxTitle
+
+	if since := *since; since != "" {
+		sinceT, err := time.Parse(time.RFC3339, since)
+		if err != nil {
+			log.Fatalf("ls command: invalid since %s. %v", since, err)
+		}
+		conf.Since =&sinceT
+	}
 	return conf, lsf.Args()
 }
 
