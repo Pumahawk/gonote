@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/go-git/go-git/v5"
-	yaml "github.com/goccy/go-yaml"
 )
 
 type ShowConf struct {
@@ -76,8 +75,23 @@ func CatNote(n Note) error {
 			return fmt.Errorf("show: Unable to stream file to stdout. %v", err)
 		}
 		return nil
-	default:
-		yaml.NewEncoder(os.Stdout, yaml.UseLiteralStyleIfMultiline(true)).Encode(n)
+	case *NoteYaml:
+		absolutePath := n.absoluteFilePath
+		size := n.size
+		offset := n.offset
+		f, err := os.Open(absolutePath)
+		if err != nil {
+			return fmt.Errorf("show: unable to open file %s", absolutePath)
+		}
+		if _, err := io.CopyN(io.Discard, f, int64(offset)); err != nil {
+			return fmt.Errorf("show: unable to read offset, content=%d, file=%s", offset, absolutePath)
+		}
+		if _, err := io.CopyN(os.Stdout, f, int64(size)); err != nil {
+			return fmt.Errorf("show: unable to read note content. offset=%d size=%d file=%s", offset, size, absolutePath)
+		}
 		return nil
+	default:
+		return fmt.Errorf("show: unsupported note %T", n)
+		
 	}
 }

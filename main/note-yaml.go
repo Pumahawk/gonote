@@ -45,19 +45,23 @@ func ReadYamlNotes(repo *git.Repository, abstolutePath, relativePath string) ([]
 									return nil, fmt.Errorf("Unable to read yaml note, path=%s. %w", abstolutePath, err)
 								}
 								note.FilePath = relativePath
-								note.AbsoluteFilePath = abstolutePath
-								note.LineStartNumber = n.GetToken().Position.Line
+								note.absoluteFilePath = abstolutePath
+								position := n.GetToken().Position
+								note.lineStartNumber = position.Line
+								note.offset = position.Offset
 								if previousNote != nil {
-									previousNote.LineEndNumber = note.LineStartNumber - 1
-									setLatUpdateTimeNote(previousNote, repo, relativePath, previousNote.LineStartNumber, previousNote.LineEndNumber)
+									previousNote.lineEndNumber = note.lineStartNumber - 1
+									previousNote.size = note.offset - previousNote.offset
+									setLatUpdateTimeNote(previousNote, repo, relativePath, previousNote.lineStartNumber, previousNote.lineEndNumber)
 								}
 								notes = append(notes, note)
 								previousNote = note
 							}
 						}
 						if previousNote != nil {
-							previousNote.LineEndNumber = lineCounter
-							setLatUpdateTimeNote(previousNote, repo, relativePath, previousNote.LineStartNumber, previousNote.LineEndNumber)
+							previousNote.lineEndNumber = lineCounter.Counter
+							previousNote.size = lineCounter.Size - previousNote.offset
+							setLatUpdateTimeNote(previousNote, repo, relativePath, previousNote.lineStartNumber, previousNote.lineEndNumber)
 						}
 					}
 				}
@@ -70,6 +74,7 @@ func ReadYamlNotes(repo *git.Repository, abstolutePath, relativePath string) ([]
 type LineCounterReader struct {
 	Origin io.Reader
 	Counter int
+	Size int
 }
 
 func NewLineCounterReader(r io.Reader) LineCounterReader {
@@ -84,6 +89,8 @@ func (lr *LineCounterReader) Read(p []byte) (n int, err error) {
 		return
 	}
 
+	lr.Size += n
+
 	for i := 0; i < n; i++ {
 		if p[i] == '\n' {
 			lr.Counter++
@@ -93,21 +100,23 @@ func (lr *LineCounterReader) Read(p []byte) (n int, err error) {
 }
 
 // Read all bytes from reder and count \n occurences
-func ReadAndCountLines(r io.Reader) ([]byte, int, error){
+func ReadAndCountLines(r io.Reader) ([]byte, *LineCounterReader, error){
 	var bf bytes.Buffer
 	lineCounter := NewLineCounterReader(r)
 	if _, err := io.Copy(&bf, &lineCounter); err != nil {
-		return nil, -1, err
+		return nil, nil, err
 	}
-	return bf.Bytes(), lineCounter.Counter, nil
+	return bf.Bytes(), &lineCounter, nil
 }
 
 type NoteYaml struct {
 	*BaseNote
 	FilePath string
-	AbsoluteFilePath string
-	LineStartNumber int
-	LineEndNumber int
+	absoluteFilePath string
+	lineStartNumber int
+	lineEndNumber int
+	offset int
+	size int
 	lastUpdate *time.Time
 }
 
@@ -116,13 +125,13 @@ func (n *NoteYaml) LastUpdate() *time.Time {
 }
 
 func (n *NoteYaml) OpenRef() string {
-	return fmt.Sprintf("%s:%d", n.AbsoluteFilePath, n.LineStartNumber)
+	return fmt.Sprintf("%s:%d", n.absoluteFilePath, n.lineStartNumber)
 }
 
 func setLatUpdateTimeNote(note *NoteYaml, repo *git.Repository, relativePath string, lineStart, lineEnd int) {
 	t, err := GetLastUpdateLine(repo, relativePath, lineStart - 1, lineEnd - 1)
 	if err != nil {
-		log.Printf("yaml note: Unable to retrieve last update from note %s:%d start=%d end=%d. %v", note.FilePath, note.LineStartNumber, note.LineStartNumber, note.LineEndNumber, err)
+		log.Printf("yaml note: Unable to retrieve last update from note %s:%d start=%d end=%d. %v", note.FilePath, note.lineStartNumber, note.lineStartNumber, note.lineEndNumber, err)
 	} else {
 		note.lastUpdate = t
 	}
