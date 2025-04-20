@@ -29,6 +29,7 @@ type LsConf struct {
 	TableTitleWidth int
 	TableTagsWidth  int
 	Since		*time.Time
+	Until		*time.Time
 }
 
 func LsCommand(conf AppConfig, args []string) {
@@ -61,6 +62,12 @@ func LsCommand(conf AppConfig, args []string) {
 				continue
 			}
 
+			if until := lsConf.Until; until != nil {
+				if updateAt := note.LastUpdate(); updateAt == nil || updateAt.Unix() > until.Unix() {
+					continue
+				}
+			}
+
 			if since := lsConf.Since; since != nil {
 				if updateAt := note.LastUpdate(); updateAt == nil || updateAt.Unix() < since.Unix() {
 					continue
@@ -91,6 +98,7 @@ func LsFlags(args []string) (LsConf, []string) {
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
 	since := lsf.String("since", "", "Since date")
+	until := lsf.String("until", "", "Until date")
 	err := lsf.Parse(args)
 	if err != nil {
 		if err == flag.ErrHelp {
@@ -123,6 +131,14 @@ func LsFlags(args []string) (LsConf, []string) {
 		log.Fatalf("ls command: Invalid regex title. regex=%s. %v", rxTitle, err)
 	}
 	conf.XTitle = rxTitle
+
+	if until := *until; until != "" {
+		untilT, err := time.Parse(time.RFC3339, until)
+		if err != nil {
+			log.Fatalf("ls command: invalid until %s. %v", until, err)
+		}
+		conf.Until =&untilT
+	}
 
 	if since := *since; since != "" {
 		sinceT, err := time.Parse(time.RFC3339, since)
