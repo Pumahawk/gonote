@@ -52,7 +52,7 @@ func GetNoteData(repo *git.Repository, absolutePath, relativePath string) ([]Not
 		return ReadYamlNotes(repo, absolutePath, relativePath)
 	}
 	if regexp.MustCompile("\\.md$").MatchString(relativePath) {
-		file, err := os.Open(relativePath)
+		file, err := os.Open(absolutePath)
 		if err != nil {
 			return nil, fmt.Errorf("main: Unable to open note file. %w", err)
 		}

@@ -116,7 +116,7 @@ func (n *NoteYaml) LastUpdate() *time.Time {
 }
 
 func (n *NoteYaml) OpenRef() string {
-	return fmt.Sprintf("%s%c%d", n.AbsoluteFilePath, os.PathSeparator, n.LineStartNumber)
+	return fmt.Sprintf("%s:%d", n.AbsoluteFilePath, n.LineStartNumber)
 }
 
 func setLatUpdateTimeNote(note *NoteYaml, repo *git.Repository, relativePath string, lineStart, lineEnd int) {
