@@ -48,7 +48,6 @@ func PrintHelpMessage() {
 
 func GetNoteData(repo *git.Repository, absolutePath, relativePath string) ([]Note, error) {
 	if regexp.MustCompile("\\.yaml$").MatchString(relativePath) {
-		// TODO set abs path and relative path
 		return ReadYamlNotes(repo, absolutePath, relativePath)
 	}
 	if regexp.MustCompile("\\.md$").MatchString(relativePath) {
@@ -57,7 +56,6 @@ func GetNoteData(repo *git.Repository, absolutePath, relativePath string) ([]Not
 			return nil, fmt.Errorf("main: Unable to open note file. %w", err)
 		}
 		defer file.Close()
-		// TODO set abs path and relative path
 		note, err := MarkdownNote(repo, absolutePath, relativePath, file)
 
 		if err == NotANote {
