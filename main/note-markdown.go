@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -38,6 +39,11 @@ func MarkdownNote(repo *git.Repository, absolutePath, relativePath string, r io.
 			} else {
 				note.FilePath = relativePath
 				note.AbsoluteFilePath = absolutePath
+				lastUpdateTime, err := GetLastUpdate(repo, relativePath)
+				if err != nil {
+					log.Printf("Unable to get last update time from file %s. %v", relativePath, err)
+				}
+				note.lastUpdate = lastUpdateTime
 				return &note, nil
 			}
 		} else {
@@ -56,7 +62,7 @@ type NoteMarkdown struct {
 }
 
 func (n *NoteMarkdown) LastUpdate() *time.Time {
-	return n.LastUpdate()
+	return n.lastUpdate
 }
 
 func (n *NoteMarkdown) OpenRef() string {
