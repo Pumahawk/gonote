@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -37,6 +36,8 @@ func MarkdownNote(repo *git.Repository, absolutePath, relativePath string, r io.
 			if err := yaml.Unmarshal(buf.Bytes(), note.BaseNote); err != nil {
 				return nil, fmt.Errorf("markdown: Unable to parse metadata in note. %w", err)
 			} else {
+				note.FilePath = relativePath
+				note.AbsoluteFilePath = absolutePath
 				return &note, nil
 			}
 		} else {
@@ -59,7 +60,7 @@ func (n *NoteMarkdown) LastUpdate() *time.Time {
 }
 
 func (n *NoteMarkdown) OpenRef() string {
-	return fmt.Sprintf("%s%c%d", n.AbsoluteFilePath, os.PathSeparator, 0)
+	return fmt.Sprintf("%s%c%d", n.AbsoluteFilePath, ':', 0)
 }
 
 func GetLastUpdate(repo *git.Repository, path string) (*time.Time, error) {
