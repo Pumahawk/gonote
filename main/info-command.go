@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/go-git/go-git/v5"
 )
 
 type InfoConf struct {
@@ -32,16 +30,11 @@ func InfoCommand(conf AppConfig, args []string) {
 		log.Fatalf("info: Unable to read notes files %v", err)
 	}
 
-	repo, err := git.PlainOpen(conf.RootPath)
-	if err != nil {
-		log.Fatalf("info: Unable to read git repository from root directory %s", conf.RootPath)
-	}
-
 	noteCount := 0
 	tagsCount := make(map[string]int)
 
 	for _, file := range files {
-		notes, err := GetNoteData(repo, file.Absolute, file.Relative)
+		notes, err := GetNoteData(file.Absolute, file.Relative)
 		if err != nil {
 			log.Fatalf("info: Unable to read file %s. %v", file, err)
 		}

@@ -1,18 +1,9 @@
 package main
 
-import (
-	"time"
-
-	"github.com/go-git/go-git/v5"
-)
-
 type NoteId = string
 
-// Note main directory
-// Must contain git repository
 type Repository struct {
 	Path string
-	Git *git.Repository
 }
 
 // Define basic note operations
@@ -21,7 +12,6 @@ type Note interface {
     Title() string
     Tags() []string
     Links() []NoteId
-    LastUpdate() *time.Time
     OpenRef() string
 }
 

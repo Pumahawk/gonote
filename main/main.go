@@ -9,8 +9,6 @@ import (
 	"os"
 	"regexp"
 	"slices"
-
-	"github.com/go-git/go-git/v5"
 )
 
 var NotANote = fmt.Errorf("Invalid Markdown note")
@@ -46,9 +44,9 @@ func PrintHelpMessage() {
 	fmt.Println("show - Print note details")
 }
 
-func GetNoteData(repo *git.Repository, absolutePath, relativePath string) ([]Note, error) {
+func GetNoteData(absolutePath, relativePath string) ([]Note, error) {
 	if regexp.MustCompile("\\.yaml$").MatchString(relativePath) {
-		return ReadYamlNotes(repo, absolutePath, relativePath)
+		return ReadYamlNotes(absolutePath, relativePath)
 	}
 	if regexp.MustCompile("\\.md$").MatchString(relativePath) {
 		file, err := os.Open(absolutePath)
@@ -56,7 +54,7 @@ func GetNoteData(repo *git.Repository, absolutePath, relativePath string) ([]Not
 			return nil, fmt.Errorf("main: Unable to open note file. %w", err)
 		}
 		defer file.Close()
-		note, err := MarkdownNote(repo, absolutePath, relativePath, file)
+		note, err := MarkdownNote(absolutePath, relativePath, file)
 
 		if err == NotANote {
 			return []Note{}, nil

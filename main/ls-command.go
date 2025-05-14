@@ -8,9 +8,6 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"time"
-
-	"github.com/go-git/go-git/v5"
 )
 
 var validOutputFlags = []string{
@@ -28,8 +25,6 @@ type LsConf struct {
 	TableIdWidth    int
 	TableTitleWidth int
 	TableTagsWidth  int
-	Since		*time.Time
-	Until		*time.Time
 }
 
 func LsCommand(conf AppConfig, args []string) {
@@ -40,14 +35,9 @@ func LsCommand(conf AppConfig, args []string) {
 		log.Fatalf("ls: Unable to read notes files %v", err)
 	}
 
-	repo, err := git.PlainOpen(conf.RootPath)
-	if err != nil {
-		log.Fatalf("info: Unable to read git repository from root directory %s", conf.RootPath)
-	}
-
 	notePrintFunc := NotePrint(lsConf)
 	for _, file := range files {
-		notes, err := GetNoteData(repo, file.Absolute, file.Relative)
+		notes, err := GetNoteData(file.Absolute, file.Relative)
 		if err != nil {
 			log.Fatalf("main: Unable to read file %s. %v", file, err)
 		}
@@ -60,18 +50,6 @@ func LsCommand(conf AppConfig, args []string) {
 			}
 			if !lsConf.XTitle.MatchString(note.Title()) {
 				continue
-			}
-
-			if until := lsConf.Until; until != nil {
-				if updateAt := note.LastUpdate(); updateAt == nil || updateAt.Unix() > until.Unix() {
-					continue
-				}
-			}
-
-			if since := lsConf.Since; since != nil {
-				if updateAt := note.LastUpdate(); updateAt == nil || updateAt.Unix() < since.Unix() {
-					continue
-				}
 			}
 
 			var links []NoteId
@@ -97,8 +75,6 @@ func LsFlags(args []string) (LsConf, []string) {
 	xTitle := lsf.String("xtitle", "", "Regex match title")
 	tags := lsf.String("t", "", "Tags AND")
 	tagsOr := lsf.String("tor", "", "Tags OR")
-	since := lsf.String("since", "", "Since date")
-	until := lsf.String("until", "", "Until date")
 	err := lsf.Parse(args)
 	if err != nil {
 		if err == flag.ErrHelp {
@@ -131,22 +107,6 @@ func LsFlags(args []string) (LsConf, []string) {
 		log.Fatalf("ls command: Invalid regex title. regex=%s. %v", rxTitle, err)
 	}
 	conf.XTitle = rxTitle
-
-	if until := *until; until != "" {
-		untilT, err := time.Parse(time.RFC3339, until)
-		if err != nil {
-			log.Fatalf("ls command: invalid until %s. %v", until, err)
-		}
-		conf.Until =&untilT
-	}
-
-	if since := *since; since != "" {
-		sinceT, err := time.Parse(time.RFC3339, since)
-		if err != nil {
-			log.Fatalf("ls command: invalid since %s. %v", since, err)
-		}
-		conf.Since =&sinceT
-	}
 	return conf, lsf.Args()
 }
 

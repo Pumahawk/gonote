@@ -6,8 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-
-	"github.com/go-git/go-git/v5"
 )
 
 type ShowConf struct {
@@ -27,13 +25,8 @@ func ShowCommand(conf AppConfig, args []string) {
 		log.Fatalf("show: Unable to read notes files %v", err)
 	}
 
-	repo, err := git.PlainOpen(conf.RootPath)
-	if err != nil {
-		log.Fatalf("info: Unable to read git repository from root directory %s", conf.RootPath)
-	}
-
 	for _, f := range files {
-		notes, err := GetNoteData(repo, f.Absolute, f.Relative)
+		notes, err := GetNoteData(f.Absolute, f.Relative)
 		if err != nil {
 			log.Fatalf("show: Unable to read file %s. %v", f, err)
 		}
