@@ -104,10 +104,17 @@ func FindAllNotesFiles(basePath string, subPath []string) ([]FilePath, error) {
 	return files, nil
 }
 
-func NoteTagsFilter(note Note, tags, tagsOr []string) bool {
+func NoteTagsFilter(note Note, tags, tagsNot, tagsOr []string) bool {
 	if len(tags) > 0 {
 		for _, t := range tags {
 			if !slices.Contains(note.Tags(), t) {
+				return false
+			}
+		}
+	}
+	if len(tagsNot) > 0 {
+		for _, t := range tagsNot {
+			if slices.Contains(note.Tags(), t) {
 				return false
 			}
 		}

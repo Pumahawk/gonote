@@ -20,6 +20,7 @@ type LsConf struct {
 	XTitle          *regexp.Regexp
 	XId             *regexp.Regexp
 	Tags            []string
+	TagsNot         []string
 	TagsOr          []string
 	Output          string
 	TableIdWidth    int
@@ -42,7 +43,7 @@ func LsCommand(conf AppConfig, args []string) {
 			log.Fatalf("main: Unable to read file %s. %v", file, err)
 		}
 		for _, note := range notes {
-			if !NoteTagsFilter(note, lsConf.Tags, lsConf.TagsOr) {
+			if !NoteTagsFilter(note, lsConf.Tags, lsConf.TagsNot, lsConf.TagsOr) {
 				continue
 			}
 			if !lsConf.XId.MatchString(note.Id()) {
@@ -74,6 +75,7 @@ func LsFlags(args []string) (LsConf, []string) {
 	xId := lsf.String("xid", "", "Regex match id")
 	xTitle := lsf.String("xtitle", "", "Regex match title")
 	tags := lsf.String("t", "", "Tags AND")
+	tagsNot := lsf.String("tn", "", "Tags Not")
 	tagsOr := lsf.String("tor", "", "Tags OR")
 	err := lsf.Parse(args)
 	if err != nil {
@@ -86,6 +88,10 @@ func LsFlags(args []string) (LsConf, []string) {
 
 	if *tags != "" {
 		conf.Tags = strings.Split(*tags, ",")
+	}
+
+	if *tagsNot != "" {
+		conf.TagsNot = strings.Split(*tagsNot, ",")
 	}
 
 	if *tagsOr != "" {

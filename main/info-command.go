@@ -11,10 +11,11 @@ import (
 )
 
 type InfoConf struct {
-	XTitle *regexp.Regexp
-	XId    *regexp.Regexp
-	Tags   []string
-	TagsOr []string
+	XTitle  *regexp.Regexp
+	XId     *regexp.Regexp
+	Tags    []string
+	TagsNot []string
+	TagsOr  []string
 }
 
 type FilePath struct {
@@ -39,7 +40,7 @@ func InfoCommand(conf AppConfig, args []string) {
 			log.Fatalf("info: Unable to read file %s. %v", file, err)
 		}
 		for _, note := range notes {
-			if !NoteTagsFilter(note, infoConf.Tags, infoConf.TagsOr) {
+			if !NoteTagsFilter(note, infoConf.Tags, infoConf.TagsNot, infoConf.TagsOr) {
 				continue
 			}
 			if !infoConf.XId.MatchString(note.Id()) {
@@ -73,6 +74,7 @@ func InfoFlags(args []string) (InfoConf, []string) {
 	xId := lsf.String("xid", "", "Regex match id")
 	xTitle := lsf.String("xtitle", "", "Regex match title")
 	tags := lsf.String("t", "", "Tags AND")
+	tagsNot := lsf.String("tn", "", "Tags NOT")
 	tagsOr := lsf.String("tor", "", "Tags OR")
 	err := lsf.Parse(args)
 	if err != nil {
@@ -85,6 +87,10 @@ func InfoFlags(args []string) (InfoConf, []string) {
 
 	if *tags != "" {
 		conf.Tags = strings.Split(*tags, ",")
+	}
+
+	if *tagsNot != "" {
+		conf.Tags = strings.Split(*tagsNot, ",")
 	}
 
 	if *tagsOr != "" {

@@ -64,6 +64,7 @@ gonote ls [options]
 |--------------------|----------------------------------------|
 | `-o`               | Output format. Default: `table`        |
 | `-t`               | Filter notes by tags (AND logic)       |
+| `-tn`              | Filter notes by tags (NOT logic        |
 | `-tor`             | Filter notes by tags (OR logic)        |
 | `-xid`             | Regex match for ID                     |
 | `-xtitle`          | Regex match for title                  |
