@@ -90,7 +90,7 @@ func InfoFlags(args []string) (InfoConf, []string) {
 	}
 
 	if *tagsNot != "" {
-		conf.Tags = strings.Split(*tagsNot, ",")
+		conf.TagsNot = strings.Split(*tagsNot, ",")
 	}
 
 	if *tagsOr != "" {
