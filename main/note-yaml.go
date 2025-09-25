@@ -26,7 +26,10 @@ func ReadYamlNotes(abstolutePath, relativePath string) ([]Note, error) {
 	}
 
 	var notes []Note
-	f, _ := parser.ParseBytes(content, parser.ParseComments)
+	f, err := parser.ParseBytes(content, parser.ParseComments)
+	if err != nil {
+		return nil, fmt.Errorf("ReadYamlNotes: Unable to parse note content. %w", err)
+	}
 	for _, doc := range f.Docs {
 		if mapNode, ok := doc.Body.(*ast.MappingNode); ok {
 			for _, v := range mapNode.Values {
